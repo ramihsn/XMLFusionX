@@ -13,3 +13,9 @@
   margin: 100px auto;
   background: white;
 }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}

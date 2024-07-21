@@ -19,6 +19,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 10vh;
 }
 
 .header-content {
@@ -30,12 +31,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-</style>
-
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
+  height: 90vh;
+  overflow: hidden;
 }
 </style>
