@@ -9,7 +9,7 @@
             >
                 {{ editableFileName }}
             </div>
-            <input 
+            <input
                 v-else
                 type="text"
                 v-model="editableFileName"
@@ -36,58 +36,118 @@
                 />
             </div>
         </div>
-        <div class="xml-file-content scrollable">
-            <pre>{{ xmlContent }}</pre>
+
+        <div v-if="showSpinner" class="spinner">
+            <font-awesome-icon icon="fa-solid fa-spinner" spin size="10x"/>
+        </div>
+        <div v-else class="xml-file-content scrollable">
+            <XMLElement
+                v-for="(el, idx) in rootXmlObjects"
+                :key="idx"
+                :name="el.key"
+                :values="el.values"
+                :attributes="el.attributes"
+                ref="elements"
+            />
         </div>
     </div>
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
+import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import XMLElement from './XMLElement.vue';
 
 export default {
     name: 'XMLFile',
+    components: {
+        XMLElement
+    },
     props: {
-        file: File
+        file: File,
     },
     setup(props, { emit }) {
-        let xmlContent = ref('');
-        let isEditing = ref(false);
-        let editableFileName = ref(props.file.name);
+        const xmlContent = ref('');
+        const isEditing = ref(false);
+        const editableFileName = ref(props.file.name);
 
-        props.file.text().then(content => {
+        const isEdited = ref(false);
+        const rootXmlObjects = ref([]);
+        const showSpinner = ref(true);
+
+        const parseXML = async () => {
+            const content = await props.file.text();
             xmlContent.value = content;
-        });
-        
+            const parser = new XMLParser({ignoreAttributes: false, attributeNamePrefix: '@_'});
+            const result = parser.parse(content);
+
+            const processNode = (node, nodeName) => {
+                const children = [];
+                const attributes = {};
+                Object.keys(node).forEach(key => {
+                    if (key.startsWith('@_')) {
+                        // attributes[key.slice(2)] = node[key];
+                        attributes[key] = node[key];
+                    } else if (typeof node[key] === 'object') {
+                        children.push({ key, values: node[key] });
+                    } else {
+                        children.push({ key, values: node[key] });
+                    }
+                });
+                return { key: nodeName, values: children, attributes: attributes};
+            };
+
+            rootXmlObjects.value = Object.keys(result).map(key => processNode(result[key], key));
+            showSpinner.value = false;
+        };
+
+        parseXML();
+
         const saveFileName = () => {
             isEditing.value = false;
+        };
+
+        const markAsEdited = (name, value) => {
+            xmlObject.value[name] = value;
+            isEdited.value = true;
         };
 
         const removeFile = () => {
             emit('remove-file', props.file);
         }
 
-        const downloadFile = () => {
-            const url = URL.createObjectURL(props.file);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = editableFileName.value;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
         return {
-            file: props.file, isEditing, xmlContent, editableFileName, // vars
-            removeFile, saveFileName, downloadFile, // funcs
+            file: props.file, isEditing, xmlContent, rootXmlObjects, editableFileName, isEdited, showSpinner, // vars
+            removeFile, saveFileName, markAsEdited, // funcs
         };
     },
     data() {
         return {
             rmFileHover: false,
             downloadFileHover: false
-            
         };
     },
+    methods: {
+        async downloadFile () {
+            await nextTick();
+            const builder = new XMLBuilder();
+            const serializedData = this.rootXmlObjects.reduce((acc, el, idx) => {
+                const elRef = this.$refs.elements[idx];
+                if (elRef && elRef.serialize) {
+                    acc[el.key] = elRef.serialize();
+                }
+                return acc;
+            }, {});
+            const xml = builder.build(serializedData);
+            const blob = new Blob([xml], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = this.editableFileName;
+            a.click();
+            URL.revokeObjectURL(url);
+        },
+    }
 }
 </script>
 
@@ -139,5 +199,12 @@ export default {
     padding: 5px;
     border-radius: 5px;
     max-height: calc(100% - 15px);
+}
+
+.spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
 }
 </style>

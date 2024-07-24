@@ -4,16 +4,16 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 
-{/* <font-awesome-icon icon="fa-solid fa-cloud-arrow-down" /> */}
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCircleInfo, faUserTie, faPlusCircle, faCloudArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { faCircleInfo, faUserTie, faCloudArrowDown, faCaretDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { faLinkedin, faGithub } from "@fortawesome/free-brands-svg-icons";
 import { faEnvelope, faFileCode, faTrashCan } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(
     faCircleInfo, faUserTie, faLinkedin, faEnvelope, faGithub,
-    faFileCode, faTrashCan, faCloudArrowDown, faPlusCircle,
+    faFileCode, faTrashCan, faCloudArrowDown,
+    faCaretDown, faSpinner,
 );
 
 const app = createApp(App)
