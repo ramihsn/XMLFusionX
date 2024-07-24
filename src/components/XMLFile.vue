@@ -56,7 +56,9 @@
 <script>
 import { ref, nextTick } from 'vue';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+
 import XMLElement from './XMLElement.vue';
+import { processXMLNode } from '@/utils';
 
 export default {
     name: 'XMLFile',
@@ -81,23 +83,7 @@ export default {
             const parser = new XMLParser({ignoreAttributes: false, attributeNamePrefix: '@_'});
             const result = parser.parse(content);
 
-            const processNode = (node, nodeName) => {
-                const children = [];
-                const attributes = {};
-                Object.keys(node).forEach(key => {
-                    if (key.startsWith('@_')) {
-                        // attributes[key.slice(2)] = node[key];
-                        attributes[key] = node[key];
-                    } else if (typeof node[key] === 'object') {
-                        children.push({ key, values: node[key] });
-                    } else {
-                        children.push({ key, values: node[key] });
-                    }
-                });
-                return { key: nodeName, values: children, attributes: attributes};
-            };
-
-            rootXmlObjects.value = Object.keys(result).map(key => processNode(result[key], key));
+            rootXmlObjects.value = Object.keys(result).map(key => processXMLNode(result[key], key));
             showSpinner.value = false;
         };
 
