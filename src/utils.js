@@ -5,8 +5,6 @@ function processXMLNode (node, nodeName) {
     Object.keys(node).forEach(key => {
         if (key.startsWith('@_')) {
             attributes[key] = node[key];
-        } else if (typeof node[key] === 'object') {
-            children.push({ key, values: node[key] });
         } else {
             children.push({ key, values: node[key] });
         }

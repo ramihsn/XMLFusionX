@@ -7,9 +7,11 @@
         </div>
         <div v-else style="margin-right: 20px;"></div>
 
-        <div class="name"><strong>{{ name }} :</strong></div>
+        <div class="name" :title="attributesToString()">
+            <strong>{{ name }} :</strong>
+        </div>
 
-        <div class="value" v-if="value !== null" @dblclick="isEditing=true">
+        <div class="value" v-if="children.length === 0" @dblclick="onDoubleClick">
             <div
                 v-if="!isEditing"
                 title="Double click to edit"
@@ -19,6 +21,7 @@
             <input
                 v-else
                 type="text"
+                ref="input"
                 v-model="value"
                 @blur="isEditing=false"
                 @keyup.enter="isEditing=false"
@@ -26,15 +29,24 @@
             />
         </div>
     </div>
-    <div class="children" v-if="value === null">
-        <div v-show="isExpanded" v-for="(child, idx) in children" :key="idx">
-            <XMLElement ref="child" :name="child.key" :values="child.values" :indentation="indentation + 1" />
+
+    <div class="children" v-if="children.length > 0">
+        <div v-show="isExpanded" v-for="child of children" :key="child.key+'-'+child.indentation">
+            <XMLElement
+                ref="child"
+                :name="child.key"
+                :values="child.values"
+                :attributes="child.attributes"
+                :indentation="indentation + 1"
+            />
         </div>
     </div>
 </template>
 
 <script>
 import { ref } from 'vue';
+
+import { processXMLNode } from '@/utils';
 
 export default {
     name: 'XMLElement',
@@ -59,7 +71,8 @@ export default {
         const isEditing = ref(false);
         const editHover = ref(false);
 
-        if (typeof props.values === 'string' || typeof props.values === 'number') {
+        if ( typeof props.values === 'string' || typeof props.values === 'number' ) {
+            // console.log("HERE, HERE, HERE, HERE, HERE, HERE, HERE, HERE, HERE, HERE, HERE");
             value.value = (typeof props.values === 'number' && props.values.toString().length > 15)
                 ? props.values.toLocaleString('fullwide', { useGrouping: false })
                 : props.values;
@@ -71,7 +84,14 @@ export default {
                 lastValue = value.value;
             }
         } else {
-            children.value = Object.keys(props.values).map(key => ({ key, values: props.values[key] }));
+            props.values.forEach(({key, values}) => {
+                if (typeof values === 'string' || typeof values === 'number') {
+                    children.value.push({ key, values });
+                } else {
+                    const result = processXMLNode(values, key)
+                    children.value.push(result);
+                }
+            });
         }
 
         const toggle = () => {
@@ -107,7 +127,19 @@ export default {
                 return { [this.name]: { ...serializedChildren, attributes: this.attributes } };
             }
             return { [this.name]: serializedChildren };
-        }
+        },
+        attributesToString() {
+            if (this.attributes) {
+                return Object.keys(this.attributes).map((key, value) => `${key.slice(2)}: ${value}`).join('\n');
+            }
+            return '';
+        },
+        onDoubleClick() {
+            this.isEditing = true;
+            this.$nextTick(() => {
+                this.$refs.input.focus();
+            });
+        },
     },
 }
 </script>

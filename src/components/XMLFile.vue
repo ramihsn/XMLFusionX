@@ -3,7 +3,7 @@
         <div class="xml-file-header">
             <div
                 v-if="!isEditing"
-                @dblclick="isEditing = true"
+                @dblclick="onDoubleClick"
                 class="file-title"
                 title="Double click to edit"
             >
@@ -11,10 +11,12 @@
             </div>
             <input
                 v-else
+                ref="input"
                 type="text"
                 v-model="editableFileName"
                 @blur="saveFileName"
                 @keyup.enter="saveFileName"
+                @keyup.escape="isEditing = false"
                 class="file-title-input file-title"
             />
             <div class="icon">
@@ -133,6 +135,12 @@ export default {
             a.click();
             URL.revokeObjectURL(url);
         },
+        onDoubleClick() {
+            this.isEditing = true;
+            this.$nextTick(() => {
+                this.$refs.input.focus();
+            });
+        }
     }
 }
 </script>
