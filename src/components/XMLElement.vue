@@ -23,8 +23,8 @@
                 type="text"
                 ref="input"
                 v-model="value"
-                @blur="isEditing=false"
-                @keyup.enter="isEditing=false"
+                @blur="onSave"
+                @keyup.enter="onSave"
                 @keyup.escape="abortEditing"
             />
         </div>
@@ -38,6 +38,7 @@
                 :values="child.values"
                 :attributes="child.attributes"
                 :indentation="indentation + 1"
+                :historyManager="historyManager"
             />
         </div>
     </div>
@@ -46,7 +47,7 @@
 <script>
 import { ref } from 'vue';
 
-import { processXMLNode } from '@/utils';
+import { processXMLNode } from '@/utils/helpers';
 
 export default {
     name: 'XMLElement',
@@ -59,12 +60,12 @@ export default {
             type: Number,
             default: 0
         },
+        historyManager: Object
     },
     setup(props) {
         const children = ref([]);
 
         let originalValue = null;
-        let lastValue = null;
         const value = ref(null);
 
         const isExpanded = ref(true);
@@ -72,16 +73,15 @@ export default {
         const editHover = ref(false);
 
         if ( typeof props.values === 'string' || typeof props.values === 'number' ) {
-            // console.log("HERE, HERE, HERE, HERE, HERE, HERE, HERE, HERE, HERE, HERE, HERE");
             value.value = (typeof props.values === 'number' && props.values.toString().length > 15)
                 ? props.values.toLocaleString('fullwide', { useGrouping: false })
                 : props.values;
 
             if (originalValue === null) {
                 originalValue = value.value
-                lastValue = value.value;
+                // lastValue = value.value;
             } else {
-                lastValue = value.value;
+                // lastValue = value.value;
             }
         } else {
             props.values.forEach(({key, values}) => {
@@ -98,15 +98,29 @@ export default {
             isExpanded.value = !isExpanded.value;
         };
 
-        const abortEditing = () => {
-            value.value = lastValue;
-            isEditing.value = false;
+        return {
+            value, children, isExpanded, isEditing, editHover,
+            toggle, // serialize,
+        };
+    },
+    data(props) {
+        let lastValue = this.value;
+
+        const onSave = () => {
+            if (this.value !== lastValue) {
+                props.historyManager.saveState(this, { lastValue, value: this.value });
+                lastValue = this.value;
+            }
+            this.isEditing = false;
         }
 
-        return {
-            value, children, isExpanded, isEditing,
-            toggle, editHover, abortEditing, // serialize,
-        };
+        const abortEditing = () => {
+            this.value = lastValue;
+            this.isEditing = false;
+        }
+
+        return { onSave, abortEditing };
+
     },
     methods: {
         serialize() {
@@ -140,6 +154,16 @@ export default {
                 this.$refs.input.focus();
             });
         },
+        undo(state) {
+            const { lastValue, value } = state;
+            this.value = lastValue;
+            this.lastValue = value;
+        },
+        redo(state) {
+            const { lastValue, value } = state;
+            this.value = value;
+            this.lastValue = lastValue;
+        }
     },
 }
 </script>

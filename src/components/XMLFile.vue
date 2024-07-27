@@ -39,6 +39,11 @@
             </div>
         </div>
 
+        <div class="actions">
+            <font-awesome-icon  @click="undo" :style="{ color: hasUndo ? activeArrowColor : disabledArrowColor }" icon="fa-solid fa-arrow-right" flip="horizontal" />
+            <font-awesome-icon @click="redo" :style="{ color: hasRedo ? activeArrowColor : disabledArrowColor }" icon="fa-solid fa-arrow-right" />
+        </div>
+
         <div v-if="showSpinner" class="spinner">
             <font-awesome-icon icon="fa-solid fa-spinner" spin size="10x"/>
         </div>
@@ -49,6 +54,7 @@
                 :name="el.key"
                 :values="el.values"
                 :attributes="el.attributes"
+                :historyManager="historyManager"
                 ref="elements"
             />
         </div>
@@ -60,7 +66,8 @@ import { ref, nextTick } from 'vue';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 
 import XMLElement from './XMLElement.vue';
-import { processXMLNode } from '@/utils';
+import { processXMLNode } from '@/utils/helpers';
+import HistoryManager from '@/utils/historyManager';
 
 export default {
     name: 'XMLFile',
@@ -71,6 +78,8 @@ export default {
         file: File,
     },
     setup(props, { emit }) {
+        const historyManager = new HistoryManager()
+
         const xmlContent = ref('');
         const isEditing = ref(false);
         const editableFileName = ref(props.file.name);
@@ -102,18 +111,28 @@ export default {
 
         const removeFile = () => {
             emit('remove-file', props.file);
-        }
+        };
 
         return {
-            file: props.file, isEditing, xmlContent, rootXmlObjects, editableFileName, isEdited, showSpinner, // vars
-            removeFile, saveFileName, markAsEdited, // funcs
+            file: props.file, isEditing, xmlContent, rootXmlObjects, editableFileName, isEdited, showSpinner, historyManager, // vars
+            removeFile, saveFileName, markAsEdited,
         };
     },
     data() {
         return {
             rmFileHover: false,
-            downloadFileHover: false
+            downloadFileHover: false,
+            activeArrowColor: "#1E3050",
+            disabledArrowColor: "#E8E8E8",
         };
+    },
+    computed: {
+        hasUndo() {
+            return this.historyManager.hasUndo;
+        },
+        hasRedo() {
+            return this.historyManager.hasRedo;
+        }
     },
     methods: {
         async downloadFile () {
@@ -140,8 +159,14 @@ export default {
             this.$nextTick(() => {
                 this.$refs.input.focus();
             });
-        }
-    }
+        },
+        undo() {
+            this.historyManager.undo();
+        },
+        redo() {
+            this.historyManager.redo();
+        },
+    },
 }
 </script>
 
@@ -200,5 +225,12 @@ export default {
     justify-content: center;
     align-items: center;
     height: 100%;
+}
+
+.actions {
+    display: flex;
+    justify-content: space-evenly;
+    margin-bottom: 10px;
+    margin-right: 10px;
 }
 </style>
