@@ -40,8 +40,17 @@
         </div>
 
         <div class="actions">
-            <font-awesome-icon  @click="undo" :style="{ color: hasUndo ? activeArrowColor : disabledArrowColor }" icon="fa-solid fa-arrow-right" flip="horizontal" />
-            <font-awesome-icon @click="redo" :style="{ color: hasRedo ? activeArrowColor : disabledArrowColor }" icon="fa-solid fa-arrow-right" />
+            <font-awesome-icon
+                @click="undo"
+                flip="horizontal"
+                icon="fa-solid fa-arrow-right"
+                :style="{ color: hasUndo ? activeArrowColor : disabledArrowColor }"
+            />
+            <font-awesome-icon
+                @click="redo"
+                icon="fa-solid fa-arrow-right"
+                :style="{ color: hasRedo ? activeArrowColor : disabledArrowColor }"
+            />
         </div>
 
         <div v-if="showSpinner" class="spinner">
@@ -161,10 +170,14 @@ export default {
             });
         },
         undo() {
-            this.historyManager.undo();
+            if ( this.historyManager.hasUndo ) {
+                this.historyManager.undo();
+            }
         },
         redo() {
-            this.historyManager.redo();
+            if ( this.historyManager.hasRedo ) {
+                this.historyManager.redo();
+            }
         },
     },
 }
