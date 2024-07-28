@@ -19,3 +19,8 @@ body {
   font-family: Arial, sans-serif;
   overflow: hidden;
 }
+
+.fa-disabled {
+  opacity: 0.3;
+  cursor: default;
+}

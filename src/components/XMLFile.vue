@@ -24,7 +24,7 @@
                     @click="downloadFile"
                     @mouseover="downloadFileHover = true"
                     @mouseout="downloadFileHover = false"
-                    :class="{'fa-bounce': downloadFileHover}"
+                    :class="[{'fa-bounce': hasUndo && downloadFileHover}, !hasUndo ? 'fa-disabled' : '']"
                     icon="fa-solid fa-cloud-arrow-down" size="2x"
                 />
             </div>
@@ -44,12 +44,12 @@
                 @click="undo"
                 flip="horizontal"
                 icon="fa-solid fa-arrow-right"
-                :style="{ color: hasUndo ? activeArrowColor : disabledArrowColor }"
+                :class="[hasUndo ? 'icon' : 'fa-disabled']"
             />
             <font-awesome-icon
                 @click="redo"
                 icon="fa-solid fa-arrow-right"
-                :style="{ color: hasRedo ? activeArrowColor : disabledArrowColor }"
+                :class="[hasRedo ? 'icon' : 'fa-disabled']"
             />
         </div>
 
@@ -86,54 +86,30 @@ export default {
     props: {
         file: File,
     },
-    setup(props, { emit }) {
-        const historyManager = new HistoryManager()
-
-        const xmlContent = ref('');
+    setup(props) {
+        const historyManager = new HistoryManager();
+        const xmlContent = '';
         const isEditing = ref(false);
         const editableFileName = ref(props.file.name);
-
-        const isEdited = ref(false);
         const rootXmlObjects = ref([]);
         const showSpinner = ref(true);
-
-        const parseXML = async () => {
-            const content = await props.file.text();
-            xmlContent.value = content;
-            const parser = new XMLParser({ignoreAttributes: false, attributeNamePrefix: '@_'});
-            const result = parser.parse(content);
-
-            rootXmlObjects.value = Object.keys(result).map(key => processXMLNode(result[key], key));
-            showSpinner.value = false;
-        };
-
-        parseXML();
-
-        const saveFileName = () => {
-            isEditing.value = false;
-        };
-
-        const markAsEdited = (name, value) => {
-            xmlObject.value[name] = value;
-            isEdited.value = true;
-        };
-
-        const removeFile = () => {
-            emit('remove-file', props.file);
-        };
+        const rmFileHover = ref(false);
+        const downloadFileHover = ref(false);
 
         return {
-            file: props.file, isEditing, xmlContent, rootXmlObjects, editableFileName, isEdited, showSpinner, historyManager, // vars
-            removeFile, saveFileName, markAsEdited,
+            historyManager,
+            xmlContent,
+            isEditing,
+            editableFileName,
+            rootXmlObjects,
+            showSpinner,
+            rmFileHover,
+            downloadFileHover,
         };
+
     },
-    data() {
-        return {
-            rmFileHover: false,
-            downloadFileHover: false,
-            activeArrowColor: "#1E3050",
-            disabledArrowColor: "#E8E8E8",
-        };
+    mounted() {
+        this.parseXML(this.file).then(() => this.showSpinner = false);
     },
     computed: {
         hasUndo() {
@@ -141,10 +117,14 @@ export default {
         },
         hasRedo() {
             return this.historyManager.hasRedo;
-        }
+        },
     },
     methods: {
         async downloadFile () {
+            if (!this.historyManager.hasUndo) {
+                return;  // the file has not been edited, nothing to download
+            }
+
             await nextTick();
             const builder = new XMLBuilder();
             const serializedData = this.rootXmlObjects.reduce((acc, el, idx) => {
@@ -162,6 +142,21 @@ export default {
             a.download = this.editableFileName;
             a.click();
             URL.revokeObjectURL(url);
+        },
+        async parseXML (file) {
+            const content = await file.text();
+            this.xmlContent = content;
+            const parser = new XMLParser({ignoreAttributes: false, attributeNamePrefix: '@_'});
+            const result = parser.parse(content);
+
+            this.rootXmlObjects = Object.keys(result).map(key => processXMLNode(result[key], key));
+        },
+        saveFileName() {
+            this.isEditing = false;
+            this.editableFileName = this.editableFileName.trim();
+        },
+        removeFile() {
+            this.$emit('remove-file', this.file);
         },
         onDoubleClick() {
             this.isEditing = true;
@@ -213,9 +208,12 @@ export default {
     padding: 0 5px;
 }
 
+.xml-file-header .icon, .actions .icon {
+    cursor: pointer;
+}
+
 .xml-file-header .icon {
     margin-left: 10px;
-    cursor: pointer;
 }
 
 .xml-file-content {
