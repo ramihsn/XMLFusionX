@@ -47,7 +47,7 @@
 <script>
 import { ref } from 'vue';
 
-import { processXMLNode } from '@/utils/helpers';
+import { processXMLNode, attributeToString } from '@/utils/helpers';
 
 export default {
     name: 'XMLElement',
@@ -106,27 +106,46 @@ export default {
     },
     methods: {
         serialize() {
-            if (this.value !== null) {
-                if (this.attributes) {
-                    return { [this.name]: { value: this.value, attributes: this.attributes } };
-                }
-                return { [this.name]: this.value };
+            const indentation = '  '.repeat(this.indentation);
+            const end = `</${this.name}>`;
+            let serializedChildren = '';
+            let result = '';
+
+            // construct the beginning of the tag
+            let start = `<${this.name}`;
+            // check if the tag had an attributes - store them
+            if (this.attributes && Object.keys(this.attributes).length > 0) {
+                start += ' ' + Object.entries(this.attributes)
+                    .map(([key, attributes]) => attributeToString(key, attributes))
+                    .join(' ')
             }
-            const serializedChildren = this.$refs.child.reduce((acc, child) => {
-                const childRef = child;
-                if (childRef) {
-                    acc[child.key] = childRef.serialize();
-                }
-                return acc;
-            }, {});
-            if (this.attributes) {
-                return { [this.name]: { ...serializedChildren, attributes: this.attributes } };
+            start += ">"
+
+            // construct the content (value or children) of the tag
+            if (this.$refs.child) {  // the tag most likely have children - serialize them
+                this.$refs.child.forEach(child => {
+                    serializedChildren += child.serialize();
+                });
+            } else {  // the tag have value - store the value
+                serializedChildren += this.value;
             }
-            return { [this.name]: serializedChildren };
+
+            // construct the closing of the tag
+            if (this.value === null) {  // the tag most likely have children - add new line after opening tag
+                result = `${indentation}${start}\n`;
+                if (serializedChildren.length > 0) {
+                    result += `${serializedChildren}`;
+                }
+                result += `${indentation}${end}\n`
+            } else {  // the tag don't have value - construct in a single line
+                result = `${indentation}${start}${this.value}${end}\n`;
+            }
+
+            return result;
         },
         attributesToString() {
             if (this.attributes) {
-                return Object.keys(this.attributes).map((key, value) => `${key.slice(2)}: ${value}`).join('\n');
+                return Object.entries(this.attributes).map(([key, value]) => `${key.slice(2)}: ${value}`).join('\n');
             }
             return '';
         },

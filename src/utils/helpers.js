@@ -12,4 +12,12 @@ function processXMLNode (node, nodeName) {
     return { key: nodeName, values: children, attributes: attributes };
 }
 
-export { processXMLNode };
+function attributeToString(key, value) {
+    key = key.slice(2)
+    if (typeof value === 'number') {
+        return `${key}=${value}`
+    }
+    return `${key}="${value}"`
+}
+
+export { processXMLNode, attributeToString };

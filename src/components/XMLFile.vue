@@ -75,7 +75,7 @@ import { ref, nextTick } from 'vue';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 
 import XMLElement from './XMLElement.vue';
-import { processXMLNode } from '@/utils/helpers';
+import { processXMLNode, attributeToString } from '@/utils/helpers';
 import HistoryManager from '@/utils/historyManager';
 
 export default {
@@ -95,6 +95,7 @@ export default {
         const showSpinner = ref(true);
         const rmFileHover = ref(false);
         const downloadFileHover = ref(false);
+        const xmlAttributes = ref(null)
 
         return {
             historyManager,
@@ -105,6 +106,7 @@ export default {
             showSpinner,
             rmFileHover,
             downloadFileHover,
+            xmlAttributes,
         };
 
     },
@@ -126,16 +128,14 @@ export default {
             }
 
             await nextTick();
-            const builder = new XMLBuilder();
-            const serializedData = this.rootXmlObjects.reduce((acc, el, idx) => {
-                const elRef = this.$refs.elements[idx];
-                if (elRef && elRef.serialize) {
-                    acc[el.key] = elRef.serialize();
-                }
-                return acc;
-            }, {});
-            const xml = builder.build(serializedData);
-            const blob = new Blob([xml], { type: 'application/xml' });
+            let serializedData = `<?xml ${
+                Object.entries(this.xmlAttributes).map(([key, values]) => attributeToString(key, values))
+            }?>\n`;
+            this.$refs.elements.forEach(element => {
+                serializedData += element.serialize();
+            });
+
+            const blob = new Blob([serializedData.trim()], { type: 'application/xml' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -149,7 +149,14 @@ export default {
             const parser = new XMLParser({ignoreAttributes: false, attributeNamePrefix: '@_'});
             const result = parser.parse(content);
 
-            this.rootXmlObjects = Object.keys(result).map(key => processXMLNode(result[key], key));
+            this.rootXmlObjects = Object.entries(result).map(([key, value]) => processXMLNode(value, key));
+
+            // get the xml metadata, and remove it from the structure
+            const xmlValuesIdx = this.rootXmlObjects.find(({key}) => key == '?xml')
+            if (xmlValuesIdx) {
+                this.xmlAttributes = xmlValuesIdx.attributes
+                this.rootXmlObjects = this.rootXmlObjects.filter(({key}) => key != xmlValuesIdx.key)
+            }
         },
         saveFileName() {
             this.isEditing = false;
