@@ -24,17 +24,30 @@ export default {
     },
     setup() {
         const xmlFiles = ref([]);
-        const xmlFilesLen = ref(0);
 
-        const onFileUploaded = (files) => {
+        return {
+            xmlFiles,
+        };
+    },
+    computed: {
+        xmlFilesLen() {
+            return this.xmlFiles.length;
+        }
+    },
+    methods: {
+        async loadFile(filePath) {
+            const response = await fetch(filePath);
+            const text = await response.text()
+            return new File([text], 'sample.xml', { type: 'text/xml' });
+        },
+        onFileUploaded(files) {
             for (const file of files) {
                 if (/\.xml$|\.dat$/i.test(file.name)) {
-                    const fileExists = xmlFiles.value.some(f => f.name === file.name);
+                    const fileExists = this.xmlFiles.some(f => f.name === file.name);
                     // Limit the number of XML files to 2 for now
-                    if (!fileExists && xmlFilesLen.value < 2) {
-                        xmlFiles.value.push(file);
-                        xmlFilesLen.value = xmlFiles.value.length;
-                        console.log(`File added: ${file.name} => ${xmlFilesLen.value}`);
+                    if (!fileExists && this.xmlFilesLen < 2) {
+                        this.xmlFiles.push(file);
+                        console.log(`File added: ${file.name}`);
                     } else {
                         console.warn(`File already exists:`, file);
                     }
@@ -42,20 +55,11 @@ export default {
                     console.error(`Invalid file type:`, file);
                 }
             }
-        };
-
-        const onRemoveFile = (file) => {
-            xmlFiles.value = xmlFiles.value.filter(f => f.name !== file.name);
-            xmlFilesLen.value = xmlFiles.value.length;
-        };
-
-        return {
-            xmlFiles,
-            xmlFilesLen,
-            onRemoveFile,
-            onFileUploaded,
-        };
-    }
+        },
+        onRemoveFile(file) {
+            this.xmlFiles = this.xmlFiles.filter(f => f.name !== file.name);
+        }
+    },
 }
 </script>
 
