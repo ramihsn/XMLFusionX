@@ -62,53 +62,32 @@ export default {
         },
         historyManager: Object
     },
-    setup(props) {
+    setup() {
         const children = ref([]);
 
-        let originalValue = null;
         const value = ref(null);
 
         const isExpanded = ref(true);
         const isEditing = ref(false);
         const editHover = ref(false);
 
-        if ( typeof props.values === 'string' || typeof props.values === 'number' ) {
-            value.value = (typeof props.values === 'number' && props.values.toString().length > 15)
-                ? props.values.toLocaleString('fullwide', { useGrouping: false })
-                : props.values;
-
-            if (originalValue === null) {
-                originalValue = value.value
-                // lastValue = value.value;
-            } else {
-                // lastValue = value.value;
-            }
-        } else {
-            props.values.forEach(({key, values}) => {
-                if (typeof values === 'string' || typeof values === 'number') {
-                    children.value.push({ key, values });
-                } else {
-                    const result = processXMLNode(values, key)
-                    children.value.push(result);
-                }
-            });
-        }
-
-        const toggle = () => {
-            isExpanded.value = !isExpanded.value;
-        };
-
         return {
-            value, children, isExpanded, isEditing, editHover,
-            toggle, // serialize,
+            children,
+            value,
+            isExpanded,
+            isEditing,
+            editHover,
         };
     },
     data(props) {
-        let lastValue = this.value;
+        let lastValue = null;
 
         const onSave = () => {
             if (this.value !== lastValue) {
-                props.historyManager.saveState(this, { lastValue, value: this.value });
+                props.historyManager.saveState(
+                    { 'undo': this.undo, 'redo': this.redo },
+                    { lastValue, value: this.value }
+                );
                 lastValue = this.value;
             }
             this.isEditing = false;
@@ -118,6 +97,9 @@ export default {
             this.value = lastValue;
             this.isEditing = false;
         }
+
+        this.parseValues(props.values);
+        lastValue = this.value;
 
         return { onSave, abortEditing };
 
@@ -153,6 +135,26 @@ export default {
             this.$nextTick(() => {
                 this.$refs.input.focus();
             });
+        },
+        toggle() {
+            this.isExpanded = !this.isExpanded;
+        },
+        parseValues(values) {
+            if ( typeof values === 'string' || typeof values === 'number' ) {
+                this.value = (typeof values === 'number' && values.toString().length > 15)
+                    ? values.toLocaleString('fullwide', { useGrouping: false })
+                    : values;
+
+            } else {
+                values.forEach(({key, values}) => {
+                    if (typeof values === 'string' || typeof values === 'number') {
+                        this.children.push({ key, values });
+                    } else {
+                        const result = processXMLNode(values, key)
+                        this.children.push(result);
+                    }
+                });
+            }
         },
         undo(state) {
             const { lastValue, value } = state;
