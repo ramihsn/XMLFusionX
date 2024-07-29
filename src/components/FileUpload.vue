@@ -13,63 +13,64 @@
             <button class="upload-button" @click="triggerFileInput">{{ message }}</button>
         </div>
     </div>
-    <div class="add-file" v-else @click="triggerFileInput">
+    <div class="add-file" v-else @click="triggerFileInput" >
         <font-awesome-icon icon="fa-solid fa-circle-plus" size="4x" />
     </div>
 </template>
 
 <script>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 
 export default {
-   name: 'FileUpload',
-   emits: ['file-upload'],
-   props: {
-       counter: {
-           type: Number,
-           default: 0
-       }
-   },
-   setup(props) {
-       const defaultMessage = 'UPLOAD XML TO START';
-       const addMessage = 'UPLOAD ANOTHER XML';
-       const message = ref(props.counter == 0 ? defaultMessage : addMessage);
-
-       const fileInput = ref(null);
-
-       const triggerFileInput = () => {
-           if (fileInput.value) {
-               fileInput.value.click();
-           }
-       };
-
-       watch(() => props.counter, (newVal) => {
-           console.log('Counter changed:', newVal);
-           message.value = newVal == 0 ? defaultMessage : addMessage;
-       });
-
-       return {
-           message,
-           fileInput,
-           triggerFileInput,
-       };
-   },
-   methods: {
-       handleFileChange(event) {
-           const files = event.target.files;
-           this.processFiles(files);
-       },
-       handleDrop(event) {
-           const files = event.dataTransfer.files;
-           this.processFiles(files);
-       },
-       processFiles(files) {
-           this.$emit('file-upload', [...files]);
-       }
-   }
+    name: 'FileUpload',
+    emits: ['file-upload'],
+    props: {
+        counter: {
+            type: Number,
+            default: 0
+        }
+    },
+    setup() {
+        return {
+            fileInput: ref(null),
+        };
+    },
+    computed: {
+        message() {
+            const defaultMessage = 'UPLOAD XML TO START';
+            const addMessage = 'UPLOAD ANOTHER XML';
+            return this.counter == 0 ? defaultMessage : addMessage
+        },
+    },
+    mounted() {
+        window.addEventListener('keydown', this.triggerFileInput);
+    },
+    beforeUnmount() {
+        window.removeEventListener('keydown', this.triggerFileInput);
+    },
+    methods: {
+        handleFileChange(event) {
+            const files = event.target.files;
+            this.processFiles(files);
+        },
+        handleDrop(event) {
+            const files = event.dataTransfer.files;
+            this.processFiles(files);
+        },
+        processFiles(files) {
+            this.$emit('file-upload', [...files]);
+        },
+        triggerFileInput(event) {
+            if (event.pointerType === 'mouse' || event.key === 'u' || event.key === 'U') {
+                if (this.fileInput) {
+                    this.fileInput.click();
+                }
+            }
+        },
+    }
 }
 </script>
-  
+
 <style scoped>
 .upload-container {
     background-color: #fff;
