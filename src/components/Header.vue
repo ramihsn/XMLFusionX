@@ -5,7 +5,10 @@
 
     <div class="header">
         <div class="logo">
-            <img src="@/assets/xml-icon.png" alt="Logo">
+            <div class="logo-container">
+                <img src="@/assets/xml-icon.png" alt="Logo">
+                <span>{{ tag }}</span>
+            </div>
         </div>
         <div class="author">
             <span>This tool was developed by:</span>
@@ -32,7 +35,8 @@ export default {
         DeveloperInfo
     },
     setup () {
-        const showDevelopInfo = ref(false)
+        const showDevelopInfo = ref(false);
+        const tag = ref('loading...');
 
         const onToggleDevelopInfo = () => {
             showDevelopInfo.value = !showDevelopInfo.value;
@@ -42,6 +46,7 @@ export default {
             author: 'Rami Hassan',
             onToggleDevelopInfo,
             showDevelopInfo,
+            tag,
         }
     },
     data() {
@@ -54,6 +59,26 @@ export default {
     },
     hideTooltip() {
         this.$refs.tooltip.hideTooltip();
+    },
+    methods: {
+        async fetchLatestTag () {
+            try {
+                const response = await fetch('https://api.github.com/repos/ramihsn/XMLFusionX/tags');
+
+                const data = await response.json();
+                if (data.length > 0) {
+                    this.tag = data[0].name;
+                } else {
+                    this.tag = 'No tags found';
+                }
+            } catch (error) {
+                console.error('Error fetching the latest tag:', error);
+                this.tag = 'Error fetching tag';
+            }
+        },
+    },
+    mounted() {
+        this.fetchLatestTag();
     },
 }
 </script>
@@ -73,6 +98,12 @@ export default {
 .logo {
   display: flex;
   align-items: center;
+}
+
+.logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .slow-spin {
