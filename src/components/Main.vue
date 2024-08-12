@@ -37,8 +37,20 @@ export default {
     methods: {
         async loadFile(filePath) {
             const response = await fetch(filePath);
-            const text = await response.text()
-            return new File([text], 'sample.xml', { type: 'text/xml' });
+            const arrayBuffer = await response.arrayBuffer();
+            const text = new TextDecoder("utf-8").decode(arrayBuffer);
+            var utf8String;
+
+            if (text.includes('�')) {
+                console.log('needs fixing');
+                // Manually decode as windows-1255 and then re-encode to UTF-8
+                const windows1255Text = new TextDecoder('windows-1255').decode(arrayBuffer);
+                utf8String = new TextDecoder("utf-8").decode(new TextEncoder().encode(windows1255Text));
+            } else {
+                utf8String = text
+            }
+
+            return new File([utf8String], 'sample.xml', { type: 'text/xml' });
         },
         onFileUploaded(files) {
             for (const file of files) {

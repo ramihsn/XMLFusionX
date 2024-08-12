@@ -143,8 +143,24 @@ export default {
             a.click();
             URL.revokeObjectURL(url);
         },
+        /**
+         * @param {File} file
+         * @returns {Promise<String>}
+         */
+        async getFileContent(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const text = new TextDecoder("utf-8").decode(arrayBuffer);
+
+            if (text.includes('�')) {
+                console.log('needs fixing');
+                // Manually decode as windows-1255 and then re-encode to UTF-8
+                const windows1255Text = new TextDecoder('windows-1255').decode(arrayBuffer);
+                return new TextDecoder("utf-8").decode(new TextEncoder().encode(windows1255Text));
+            }
+            return text;
+        },
         async parseXML (file) {
-            const content = await file.text();
+            const content = await this.getFileContent(file);
             this.xmlContent = content;
             const parser = new XMLParser({ignoreAttributes: false, attributeNamePrefix: '@_'});
             const result = parser.parse(content);
