@@ -1,5 +1,5 @@
 <template>
-    <teleport to=".developer-info" v-if="showDevelopInfo">
+    <teleport to=".portal" v-if="showDevelopInfo">
         <DeveloperInfo @closeDeveloperInfo="onToggleDevelopInfo" />
     </teleport>
 

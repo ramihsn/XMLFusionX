@@ -1,4 +1,11 @@
 <template>
+    <teleport to=".portal" v-if="showRemoveFileConfirmation">
+        <RemoveFileConfirmation
+            :fileName="file.name"
+            @closeRemoveFileConfirmation="oncloseRemoveFileConfirmation"
+        />
+    </teleport>
+
     <div class="xml-file">
         <div class="xml-file-header">
             <div
@@ -72,16 +79,19 @@
 
 <script>
 import { ref, nextTick } from 'vue';
-import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 
 import XMLElement from './XMLElement.vue';
 import { processXMLNode, attributeToString } from '@/utils/helpers';
 import HistoryManager from '@/utils/historyManager';
+import RemoveFileConfirmation from './RemoveFileConfirmation.vue';
 
 export default {
     name: 'XMLFile',
+    emits: ['remove-file'],
     components: {
-        XMLElement
+        XMLElement,
+        RemoveFileConfirmation,
     },
     props: {
         file: File,
@@ -95,7 +105,8 @@ export default {
         const showSpinner = ref(true);
         const rmFileHover = ref(false);
         const downloadFileHover = ref(false);
-        const xmlAttributes = ref(null)
+        const xmlAttributes = ref(null);
+        const showRemoveFileConfirmation = ref(false);
 
         return {
             historyManager,
@@ -107,6 +118,7 @@ export default {
             rmFileHover,
             downloadFileHover,
             xmlAttributes,
+            showRemoveFileConfirmation,
         };
 
     },
@@ -179,7 +191,7 @@ export default {
             this.editableFileName = this.editableFileName.trim();
         },
         removeFile() {
-            this.$emit('remove-file', this.file);
+            this.showRemoveFileConfirmation = true;
         },
         onDoubleClick() {
             this.isEditing = true;
@@ -197,6 +209,13 @@ export default {
                 this.historyManager.redo();
             }
         },
+        /**
+         * @param {Boolean} removeFile - should the file be removed
+         */
+        oncloseRemoveFileConfirmation(removeFile) {
+            this.showRemoveFileConfirmation = false;
+            if (removeFile) this.$emit('remove-file', this.file);
+        }
     },
 }
 </script>
