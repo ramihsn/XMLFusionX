@@ -3,8 +3,12 @@
         <div v-for="file in xmlFiles" :key="file.name" class="xml-file-wrapper">
             <XMLFile :file="file" @remove-file="onRemoveFile" />
         </div>
+
         <!-- Limit the number of XML files to 2 for now -->
-        <div v-if="xmlFilesLen < 2" class="file-upload-wrapper" :class="{'hover': xmlFilesLen === 1}" >
+        <div v-if="xmlFilesLen === 0">
+            <FileUpload @file-upload="onFileUploaded" :counter="xmlFilesLen"  />
+        </div>
+        <div v-else-if="xmlFilesLen === 1" class="hover">
             <FileUpload @file-upload="onFileUploaded" :counter="xmlFilesLen"  />
         </div>
     </div>
@@ -72,6 +76,9 @@ export default {
             this.xmlFiles = this.xmlFiles.filter(f => f.name !== file.name);
         }
     },
+    mounted() {
+        this.loadFile('data/v3/kkk-v1.xml').then(file => this.xmlFiles.push(file));
+    }
 }
 </script>
 
@@ -120,28 +127,16 @@ export default {
     padding-left: 20px;
 }
 
-@media (max-width: 768px) {
-    .container {
-        flex-direction: column;
-        height: auto;
-    }
-    .xml-file-wrapper,
-    .file-upload-wrapper {
-        max-width: 100%;
-        flex: 1;
-        padding: 10px 0;
-    }
-    .container > .xml-file-wrapper + .xml-file-wrapper {
-        padding-left: 0;
-        padding-top: 20px;
-    }
-    .container > .xml-file-wrapper + .file-upload-wrapper {
-        padding-left: 0;
-        padding-top: 20px;
-    }
-}
-
 .hover {
-    z-index: 1000;
-} 
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    padding: 20px;
+    margin: 20px;
+    background-color: lightblue;
+    opacity: .7;
+}
+.hover:hover {
+    opacity: .3;
+}
 </style>
